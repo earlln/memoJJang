@@ -1,0 +1,24 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- 메모짱 다크 테마 팔레트 -->
+    <SolidColorBrush x:Key="App.Background"        Color="#FF1F1F22" />
+    <SolidColorBrush x:Key="App.Surface"           Color="#FF26262A" />
+    <SolidColorBrush x:Key="App.SurfaceAlt"        Color="#FF2E2E34" />
+    <SolidColorBrush x:Key="App.Menu.Background"   Color="#FF2A2A2F" />
+    <SolidColorBrush x:Key="App.Border"            Color="#FF3A3A41" />
+    <SolidColorBrush x:Key="App.Text"              Color="#FFEDEDF0" />
+    <SolidColorBrush x:Key="App.TextMuted"         Color="#FF9B9BA6" />
+    <SolidColorBrush x:Key="App.Accent"            Color="#FF5C9BFF" />
+    <SolidColorBrush x:Key="App.AccentText"        Color="#FF10131A" />
+    <SolidColorBrush x:Key="App.Hover"             Color="#FF35353C" />
+    <SolidColorBrush x:Key="App.Pressed"           Color="#FF404049" />
+    <SolidColorBrush x:Key="App.Selection"         Color="#FF2C4F7C" />
+    <SolidColorBrush x:Key="App.Editor.Background" Color="#FF1A1A1D" />
+    <SolidColorBrush x:Key="App.Editor.Foreground" Color="#FFE4E4E8" />
+    <SolidColorBrush x:Key="App.Caret"             Color="#FFE4E4E8" />
+    <SolidColorBrush x:Key="App.Tab.Selected"      Color="#FF1A1A1D" />
+    <SolidColorBrush x:Key="App.Tab.Unselected"    Color="#00000000" />
+    <SolidColorBrush x:Key="App.Warning"           Color="#FFFFB05C" />
+
+</ResourceDictionary>

@@ -1,0 +1,71 @@
+name: build
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (Windows)
+    runs-on: windows-latest
+
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+
+      - name: .NET 8 SDK 설치
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: 복원
+        run: dotnet restore MemoJJang.sln
+
+      - name: 빌드
+        run: dotnet build MemoJJang.sln -c Release --no-restore -warnaserror:NU1605
+
+      - name: 게시 (프레임워크 의존, win-x64)
+        run: >
+          dotnet publish src/MemoJJang/MemoJJang.csproj
+          -c Release -r win-x64 --self-contained false
+          -p:PublishSingleFile=true
+          -o artifacts/framework-dependent
+
+      - name: 게시 (독립 실행, win-x64)
+        run: >
+          dotnet publish src/MemoJJang/MemoJJang.csproj
+          -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true
+          -o artifacts/self-contained
+
+      - name: 산출물 압축
+        shell: pwsh
+        run: |
+          Compress-Archive -Path artifacts/framework-dependent/* -DestinationPath MemoJJang-win-x64-framework-dependent.zip
+          Compress-Archive -Path artifacts/self-contained/*      -DestinationPath MemoJJang-win-x64-self-contained.zip
+
+      - name: 산출물 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: MemoJJang-win-x64
+          path: |
+            MemoJJang-win-x64-framework-dependent.zip
+            MemoJJang-win-x64-self-contained.zip
+          retention-days: 30
+
+      - name: 릴리스 등록 (태그 푸시일 때만)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            MemoJJang-win-x64-framework-dependent.zip
+            MemoJJang-win-x64-self-contained.zip
+          generate_release_notes: true

@@ -1,0 +1,304 @@
+﻿<Window x:Class="MemoJJang.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="메모짱"
+        Width="1000" Height="680"
+        MinWidth="520" MinHeight="360"
+        Background="{DynamicResource App.Background}"
+        Foreground="{DynamicResource App.Text}"
+        FontFamily="Segoe UI, Malgun Gothic"
+        FontSize="13"
+        UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Display"
+        AllowDrop="True"
+        Drop="Window_Drop"
+        DragOver="Window_DragOver"
+        Loaded="Window_Loaded"
+        Closing="Window_Closing"
+        PreviewKeyDown="Window_PreviewKeyDown">
+
+    <Window.Resources>
+
+        <!-- 탭 머리글: 파일 이름 + 변경 표시 + 닫기 버튼 -->
+        <DataTemplate x:Key="App.TabHeaderTemplate">
+            <StackPanel Orientation="Horizontal" Margin="12,7,6,7">
+                <Ellipse Width="6" Height="6"
+                         Margin="0,0,7,0"
+                         VerticalAlignment="Center"
+                         Fill="{DynamicResource App.Accent}"
+                         Visibility="{Binding ModifiedMarkVisibility}" />
+                <TextBlock Text="{Binding DisplayName}"
+                           ToolTip="{Binding ToolTipText}"
+                           VerticalAlignment="Center"
+                           MaxWidth="190"
+                           TextTrimming="CharacterEllipsis" />
+                <Button Style="{StaticResource App.IconButton}"
+                        Margin="10,0,0,0"
+                        Padding="4"
+                        Tag="{Binding}"
+                        Click="TabCloseButton_Click"
+                        ToolTip="탭 닫기 (Ctrl+W)">
+                    <Path Width="8" Height="8"
+                          Stretch="Uniform"
+                          Stroke="{DynamicResource App.TextMuted}"
+                          StrokeThickness="1.5"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"
+                          Data="M 0,0 L 8,8 M 8,0 L 0,8" />
+                </Button>
+            </StackPanel>
+        </DataTemplate>
+
+    </Window.Resources>
+
+    <DockPanel>
+
+        <!-- ===================== 메뉴 막대 ===================== -->
+        <Border DockPanel.Dock="Top"
+                Background="{DynamicResource App.Surface}"
+                BorderBrush="{DynamicResource App.Border}"
+                BorderThickness="0,0,0,1"
+                Padding="6,4">
+            <DockPanel>
+                <Button x:Name="ThemeToggleButton"
+                        DockPanel.Dock="Right"
+                        Style="{StaticResource App.IconButton}"
+                        Padding="7,4"
+                        Click="ThemeToggle_Click"
+                        ToolTip="라이트 / 다크 전환">
+                    <TextBlock x:Name="ThemeToggleGlyph" Text="&#x1F319;" FontSize="13" />
+                </Button>
+
+                <Menu VerticalAlignment="Center">
+
+                    <MenuItem Header="파일(_F)">
+                        <MenuItem Header="새 탭(_T)" InputGestureText="Ctrl+T" Click="NewTab_Click" />
+                        <MenuItem Header="새 창(_W)" InputGestureText="Ctrl+Shift+N" Click="NewWindow_Click" />
+                        <MenuItem Header="열기(_O)..." InputGestureText="Ctrl+O" Click="Open_Click" />
+                        <MenuItem Header="인코딩 지정하여 열기(_E)..." Click="OpenWithEncoding_Click" />
+                        <MenuItem x:Name="RecentFilesMenu" Header="최근 파일(_R)" />
+                        <Separator />
+                        <MenuItem Header="저장(_S)" InputGestureText="Ctrl+S" Click="Save_Click" />
+                        <MenuItem Header="다른 이름으로 저장(_A)..." InputGestureText="Ctrl+Shift+S" Click="SaveAs_Click" />
+                        <Separator />
+                        <MenuItem Header="인쇄(_P)..." InputGestureText="Ctrl+P" Click="Print_Click" />
+                        <Separator />
+                        <MenuItem Header="탭 닫기(_C)" InputGestureText="Ctrl+W" Click="CloseTab_Click" />
+                        <MenuItem Header="끝내기(_X)" InputGestureText="Alt+F4" Click="Exit_Click" />
+                    </MenuItem>
+
+                    <MenuItem Header="편집(_E)">
+                        <MenuItem Header="실행 취소(_U)" InputGestureText="Ctrl+Z" Click="Undo_Click" />
+                        <MenuItem Header="다시 실행(_R)" InputGestureText="Ctrl+Y" Click="Redo_Click" />
+                        <Separator />
+                        <MenuItem Header="잘라내기(_T)" InputGestureText="Ctrl+X" Click="Cut_Click" />
+                        <MenuItem Header="복사(_C)" InputGestureText="Ctrl+C" Click="Copy_Click" />
+                        <MenuItem Header="붙여넣기(_P)" InputGestureText="Ctrl+V" Click="Paste_Click" />
+                        <MenuItem Header="삭제(_L)" InputGestureText="Del" Click="Delete_Click" />
+                        <Separator />
+                        <MenuItem Header="찾기(_F)..." InputGestureText="Ctrl+F" Click="Find_Click" />
+                        <MenuItem Header="다음 찾기(_N)" InputGestureText="F3" Click="FindNext_Click" />
+                        <MenuItem Header="이전 찾기(_V)" InputGestureText="Shift+F3" Click="FindPrevious_Click" />
+                        <MenuItem Header="바꾸기(_H)..." InputGestureText="Ctrl+H" Click="Replace_Click" />
+                        <MenuItem Header="이동(_G)..." InputGestureText="Ctrl+G" Click="GoTo_Click" />
+                        <Separator />
+                        <MenuItem Header="모두 선택(_A)" InputGestureText="Ctrl+A" Click="SelectAll_Click" />
+                        <MenuItem Header="시간/날짜(_D)" InputGestureText="F5" Click="TimeDate_Click" />
+                    </MenuItem>
+
+                    <MenuItem Header="서식(_O)">
+                        <MenuItem x:Name="WordWrapMenuItem"
+                                  Header="자동 줄 바꿈(_W)"
+                                  IsCheckable="True"
+                                  Click="WordWrap_Click" />
+                        <MenuItem Header="글꼴(_F)..." Click="Font_Click" />
+                        <Separator />
+                        <MenuItem x:Name="LineEndingMenuItem" Header="줄 바꿈 형식(_L)" />
+                        <MenuItem x:Name="EncodingMenuItem" Header="인코딩(_E)" />
+                    </MenuItem>
+
+                    <MenuItem Header="보기(_V)">
+                        <MenuItem Header="확대(_I)" InputGestureText="Ctrl++" Click="ZoomIn_Click" />
+                        <MenuItem Header="축소(_O)" InputGestureText="Ctrl+-" Click="ZoomOut_Click" />
+                        <MenuItem Header="기본 크기 복원(_R)" InputGestureText="Ctrl+0" Click="ZoomReset_Click" />
+                        <Separator />
+                        <MenuItem x:Name="StatusBarMenuItem"
+                                  Header="상태 표시줄(_S)"
+                                  IsCheckable="True"
+                                  Click="StatusBar_Click" />
+                        <Separator />
+                        <MenuItem Header="테마(_T)">
+                            <MenuItem x:Name="ThemeLightMenuItem" Header="라이트(_L)" IsCheckable="True" Click="ThemeLight_Click" />
+                            <MenuItem x:Name="ThemeDarkMenuItem" Header="다크(_D)" IsCheckable="True" Click="ThemeDark_Click" />
+                            <MenuItem x:Name="ThemeSystemMenuItem" Header="시스템 설정 따름(_S)" IsCheckable="True" Click="ThemeSystem_Click" />
+                        </MenuItem>
+                        <MenuItem x:Name="RestoreSessionMenuItem"
+                                  Header="종료 시 탭 유지(_K)"
+                                  IsCheckable="True"
+                                  Click="RestoreSession_Click" />
+                    </MenuItem>
+
+                    <MenuItem Header="도움말(_H)">
+                        <MenuItem Header="메모짱 정보(_A)" Click="About_Click" />
+                    </MenuItem>
+
+                </Menu>
+            </DockPanel>
+        </Border>
+
+        <!-- ===================== 상태 표시줄 ===================== -->
+        <Border x:Name="StatusBarRoot"
+                DockPanel.Dock="Bottom"
+                Background="{DynamicResource App.Surface}"
+                BorderBrush="{DynamicResource App.Border}"
+                BorderThickness="0,1,0,0"
+                Padding="12,2">
+            <DockPanel>
+                <Menu DockPanel.Dock="Right" VerticalAlignment="Center">
+                    <MenuItem x:Name="ZoomStatusMenu" Header="100%" ToolTip="확대 / 축소" />
+                    <MenuItem x:Name="LineEndingStatusMenu" Header="CRLF" ToolTip="줄 바꿈 형식" />
+                    <MenuItem x:Name="EncodingStatusMenu" Header="UTF-8" ToolTip="파일 인코딩" />
+                </Menu>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock x:Name="CaretStatusText"
+                               Text="줄 1, 열 1"
+                               Foreground="{DynamicResource App.TextMuted}" />
+                    <TextBlock x:Name="CountStatusText"
+                               Text=""
+                               Margin="18,0,0,0"
+                               Foreground="{DynamicResource App.TextMuted}" />
+                    <TextBlock x:Name="EncodingHintText"
+                               Text=""
+                               Margin="18,0,0,0"
+                               Foreground="{DynamicResource App.TextMuted}" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- ===================== 본문 ===================== -->
+        <DockPanel>
+
+            <!-- 찾기 / 바꾸기 막대 -->
+            <Border x:Name="FindBar"
+                    DockPanel.Dock="Top"
+                    Visibility="Collapsed"
+                    Background="{DynamicResource App.SurfaceAlt}"
+                    BorderBrush="{DynamicResource App.Border}"
+                    BorderThickness="0,0,0,1"
+                    Padding="12,8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <!-- 찾기 줄 -->
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" MaxWidth="320" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0" Text="찾기" VerticalAlignment="Center"
+                                   Width="52" Foreground="{DynamicResource App.TextMuted}" />
+
+                        <TextBox x:Name="FindTextBox"
+                                 Grid.Column="1"
+                                 Style="{StaticResource App.TextBox}"
+                                 TextChanged="FindTextBox_TextChanged"
+                                 KeyDown="FindTextBox_KeyDown" />
+
+                        <Button Grid.Column="2" Margin="6,0,0,0" Padding="6"
+                                Style="{StaticResource App.IconButton}"
+                                Click="FindPrevious_Click" ToolTip="이전 찾기 (Shift+F3)">
+                            <Path Width="10" Height="6" Stretch="Uniform"
+                                  Stroke="{DynamicResource App.Text}" StrokeThickness="1.6"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                  Data="M 0,6 L 5,0 L 10,6" />
+                        </Button>
+
+                        <Button Grid.Column="3" Margin="2,0,0,0" Padding="6"
+                                Style="{StaticResource App.IconButton}"
+                                Click="FindNext_Click" ToolTip="다음 찾기 (F3)">
+                            <Path Width="10" Height="6" Stretch="Uniform"
+                                  Stroke="{DynamicResource App.Text}" StrokeThickness="1.6"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                  Data="M 0,0 L 5,6 L 10,0" />
+                        </Button>
+
+                        <StackPanel Grid.Column="4" Orientation="Horizontal" Margin="10,0,0,0">
+                            <ToggleButton x:Name="MatchCaseToggle"
+                                          Style="{StaticResource App.ChipToggle}"
+                                          Content="Aa" ToolTip="대/소문자 구분"
+                                          Click="SearchOption_Changed" />
+                            <ToggleButton x:Name="WholeWordToggle"
+                                          Style="{StaticResource App.ChipToggle}"
+                                          Margin="6,0,0,0"
+                                          Content="ab" ToolTip="단어 단위로"
+                                          Click="SearchOption_Changed" />
+                            <ToggleButton x:Name="WrapAroundToggle"
+                                          Style="{StaticResource App.ChipToggle}"
+                                          Margin="6,0,0,0"
+                                          IsChecked="True"
+                                          Content="↻" ToolTip="끝까지 가면 처음부터"
+                                          Click="SearchOption_Changed" />
+                        </StackPanel>
+
+                        <TextBlock x:Name="FindResultText"
+                                   Grid.Column="5"
+                                   Margin="14,0,0,0"
+                                   VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource App.TextMuted}" />
+
+                        <Button Grid.Column="6" Padding="6"
+                                Style="{StaticResource App.IconButton}"
+                                Click="CloseFindBar_Click" ToolTip="닫기 (Esc)">
+                            <Path Width="9" Height="9" Stretch="Uniform"
+                                  Stroke="{DynamicResource App.TextMuted}" StrokeThickness="1.5"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                  Data="M 0,0 L 9,9 M 9,0 L 0,9" />
+                        </Button>
+                    </Grid>
+
+                    <!-- 바꾸기 줄 -->
+                    <Grid x:Name="ReplaceRow" Grid.Row="1" Margin="0,8,0,0" Visibility="Collapsed">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" MaxWidth="320" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0" Text="바꾸기" VerticalAlignment="Center"
+                                   Width="52" Foreground="{DynamicResource App.TextMuted}" />
+
+                        <TextBox x:Name="ReplaceTextBox"
+                                 Grid.Column="1"
+                                 Style="{StaticResource App.TextBox}"
+                                 KeyDown="ReplaceTextBox_KeyDown" />
+
+                        <Button Grid.Column="2" Margin="8,0,0,0" MinWidth="0"
+                                Style="{StaticResource App.Button}" Padding="12,5"
+                                Content="바꾸기" Click="ReplaceOne_Click" />
+
+                        <Button Grid.Column="3" Margin="6,0,0,0" MinWidth="0"
+                                Style="{StaticResource App.Button}" Padding="12,5"
+                                Content="모두 바꾸기" Click="ReplaceAll_Click" />
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <TabControl x:Name="Tabs"
+                        Style="{StaticResource App.TabControl}"
+                        SelectionChanged="Tabs_SelectionChanged" />
+
+        </DockPanel>
+    </DockPanel>
+</Window>

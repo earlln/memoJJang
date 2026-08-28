@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>MemoJJang</RootNamespace>
+    <AssemblyName>MemoJJang</AssemblyName>
+    <!-- Linux/macOS 에서도 빌드 검증이 가능하도록 -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <!-- ===== 버전 정보 (단일 출처: Directory.Build.props) ===== -->
+  <PropertyGroup>
+    <Product>메모짱</Product>
+    <Company>Earlln.com</Company>
+    <Authors>Earlln.com</Authors>
+    <Copyright>Copyright (c) Earlln.com</Copyright>
+    <Description>메모짱 - 심플하고 세련된 윈도우 메모장</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>

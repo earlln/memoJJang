@@ -12,6 +12,23 @@
 
 ---
 
+## 내려받기 — 설치 필요 없음
+
+[**Releases 페이지**](https://github.com/earlln/memoJJang/releases/latest)에서 `MemoJJang-vX.Y.Z-win-x64.exe` 를 받아
+더블클릭하면 바로 실행됩니다. 설치 과정도, 관리자 권한도, .NET 런타임 설치도 필요 없습니다.
+
+| 파일 | 설명 |
+| --- | --- |
+| `MemoJJang-<버전>-win-x64.exe` | **대부분 이걸 받으세요.** 런타임을 품고 있어 그대로 실행됩니다. |
+| `MemoJJang-<버전>-win-x64-runtime-required.exe` | 용량이 작지만 [.NET 8 데스크톱 런타임](https://dotnet.microsoft.com/download/dotnet/8.0/runtime)이 필요합니다. |
+
+요구 사항은 Windows 10(1607) 이상 64비트입니다.
+지울 때는 exe 파일만 삭제하면 되고, 설정까지 지우려면 `%LocalAppData%\MemoJJang\` 폴더도 함께 삭제하세요.
+
+> 코드 서명을 하지 않아 첫 실행 시 SmartScreen 경고가 뜰 수 있습니다. `추가 정보` → `실행`을 누르세요.
+
+---
+
 ## 화면 구성
 
 ```

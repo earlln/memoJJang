@@ -62,7 +62,13 @@ public partial class FontPickerDialog : Window
         _initialized = true;
         UpdatePreview();
 
-        Loaded += (_, _) => FamilyList.ScrollIntoView(FamilyList.SelectedItem);
+        Loaded += (_, _) =>
+        {
+            if (FamilyList.SelectedItem is not null)
+            {
+                FamilyList.ScrollIntoView(FamilyList.SelectedItem);
+            }
+        };
     }
 
     public string SelectedFamily { get; private set; }

@@ -20,7 +20,11 @@ public static class ThemeService
             _ => IsSystemDark()
         };
 
-        var uri = new Uri(dark ? "Themes/Dark.xaml" : "Themes/Light.xaml", UriKind.Relative);
+        var uri = new Uri(
+            dark
+                ? "pack://application:,,,/MemoJJang;component/Themes/Dark.xaml"
+                : "pack://application:,,,/MemoJJang;component/Themes/Light.xaml",
+            UriKind.Absolute);
         var dictionary = new ResourceDictionary { Source = uri };
 
         var merged = Application.Current.Resources.MergedDictionaries;

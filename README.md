@@ -1,6 +1,6 @@
 # 메모짱 (MemoJJang)
 
-> **메모짱 ver1.0 by Earlln.com** — 심플하면서도 세련된 윈도우 메모장
+> **메모짱 ver1.1 by Earlln.com** — 심플하면서도 세련된 윈도우 메모장
 
 윈도우 기본 메모장(Notepad)의 익숙한 동작은 그대로 두고,
 **탭 편집 · 다크 모드 · 세션 유지** 같은 Windows 11 메모장(윈도우 노트)의 편의 기능을 얹었습니다.
@@ -8,7 +8,7 @@
 
 ![플랫폼](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4)
 ![런타임](https://img.shields.io/badge/.NET-8.0--windows-512BD4)
-![버전](https://img.shields.io/badge/version-1.0.0-2F6FED)
+![버전](https://img.shields.io/badge/version-1.1.0-2F6FED)
 
 ---
 
@@ -47,7 +47,7 @@
 └────────────────────────────────────────────────────────────┘
 ```
 
-창 제목은 항상 `<파일 이름> - 메모짱 ver1.0 by Earlln.com` 형식이며,
+창 제목은 항상 `<파일 이름> - 메모짱 ver1.1 by Earlln.com` 형식이며,
 저장하지 않은 변경이 있으면 앞에 `*` 가 붙습니다.
 
 ---

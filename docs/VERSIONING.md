@@ -15,7 +15,7 @@ MAJOR . MINOR . PATCH
 | **MINOR** | 기능이 추가될 때 (기존 동작은 그대로) |
 | **PATCH** | 버그 수정, 문구 수정, 성능 개선 |
 
-사용자에게 보이는 짧은 버전(`ver1.0`)은 `MAJOR.MINOR` 입니다.
+사용자에게 보이는 짧은 버전(`ver1.1`)은 `MAJOR.MINOR` 입니다.
 창 제목에는 이 짧은 버전이, `도움말 > 메모짱 정보` 에는 전체 버전이 표시됩니다.
 
 ## 2. 단일 출처
@@ -23,8 +23,8 @@ MAJOR . MINOR . PATCH
 버전 값은 **`Directory.Build.props` 한 곳**에만 적습니다.
 
 ```xml
-<VersionPrefix>1.0.0</VersionPrefix>
-<DisplayVersion>1.0</DisplayVersion>
+<VersionPrefix>1.1.0</VersionPrefix>
+<DisplayVersion>1.1</DisplayVersion>
 ```
 
 여기서 다음이 자동으로 파생됩니다.
@@ -70,9 +70,22 @@ chore(ci): windows-latest 러너로 전환
    git tag -a v1.1.0 -m "메모짱 v1.1.0"
    git push origin main --follow-tags
    ```
-5. GitHub Actions 가 Windows 에서 빌드해
-   `MemoJJang-win-x64-framework-dependent.zip` 과
-   `MemoJJang-win-x64-self-contained.zip` 을 릴리스에 첨부합니다.
+5. GitHub Actions 가 Windows 에서 빌드해 실행 파일을 릴리스에 첨부합니다.
+
+### 태그를 밀 수 없을 때
+
+CI 나 자동화 환경처럼 `refs/tags/*` 푸시 권한이 없는 경우에는
+**Actions → `release` → `Run workflow`** 에서 태그 이름을 입력해 실행하세요.
+워크플로가 `GITHUB_TOKEN` 권한으로 태그와 릴리스를 만들고
+다음 두 실행 파일을 첨부합니다.
+
+| 파일 | 설명 |
+| --- | --- |
+| `MemoJJang-<태그>-win-x64.exe` | 독립 실행. .NET 설치 불필요 |
+| `MemoJJang-<태그>-win-x64-runtime-required.exe` | .NET 8 데스크톱 런타임 필요 |
+
+이 경우에도 1~3 단계(변경 이력 정리, 버전 올리기, 커밋)는 먼저 끝내 두어야
+릴리스에 담기는 실행 파일의 버전이 태그와 일치합니다.
 
 ## 6. 설정 파일 호환성
 

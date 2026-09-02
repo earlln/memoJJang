@@ -5,7 +5,7 @@
 
 ## [Unreleased]
 
-## [1.0.1] - 2026-08-28
+## [1.1.0] - 2026-09-02
 
 ### 고쳐짐
 - 본문 편집 영역 위에 파일을 끌어다 놓으면 열리지 않던 문제.
@@ -18,6 +18,10 @@
   파일과 폴더를 함께 놓으면 파일은 바로 열리고 폴더는 열기 창의 시작 위치가 된다.
 - **드롭 안내 표시** — 끌어다 놓는 동안 무엇이 열릴지 알려 주는 안내가 본문 위에 표시된다.
 - 한 번에 20개를 넘는 파일을 놓으면 탭이 그만큼 만들어진다는 확인을 먼저 받는다.
+
+### 바뀜
+- 창 제목의 버전 표기가 `메모짱 ver1.0 by Earlln.com` 에서
+  `메모짱 ver1.1 by Earlln.com` 으로 바뀌었다. (`DisplayVersion` = `MAJOR.MINOR`)
 
 ## [1.0.0] - 2026-08-28
 
@@ -51,6 +55,6 @@
 - **설정 유지** — 테마, 글꼴, 자동 줄 바꿈, 확대 비율, 창 위치·크기, 최근 파일
 - **GitHub Actions 빌드 파이프라인** — Windows 빌드 + `v*` 태그 릴리스 자동 첨부
 
-[Unreleased]: https://github.com/earlln/memoJJang/compare/v1.0.1...HEAD
-[1.0.1]: https://github.com/earlln/memoJJang/compare/v1.0.0...v1.0.1
+[Unreleased]: https://github.com/earlln/memoJJang/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/earlln/memoJJang/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/earlln/memoJJang/releases/tag/v1.0.0

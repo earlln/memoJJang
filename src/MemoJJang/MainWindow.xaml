@@ -11,8 +11,8 @@
         UseLayoutRounding="True"
         TextOptions.TextFormattingMode="Display"
         AllowDrop="True"
-        Drop="Window_Drop"
-        DragOver="Window_DragOver"
+        PreviewDrop="Window_PreviewDrop"
+        PreviewDragOver="Window_PreviewDragOver"
         Loaded="Window_Loaded"
         Closing="Window_Closing"
         PreviewKeyDown="Window_PreviewKeyDown">
@@ -295,9 +295,52 @@
                 </Grid>
             </Border>
 
-            <TabControl x:Name="Tabs"
-                        Style="{StaticResource App.TabControl}"
-                        SelectionChanged="Tabs_SelectionChanged" />
+            <Grid>
+                <TabControl x:Name="Tabs"
+                            Style="{StaticResource App.TabControl}"
+                            SelectionChanged="Tabs_SelectionChanged" />
+
+                <!-- 파일/폴더를 끌어다 놓는 동안 표시되는 안내 -->
+                <Border x:Name="DropOverlay"
+                        Visibility="Collapsed"
+                        IsHitTestVisible="False"
+                        Background="{DynamicResource App.Editor.Background}"
+                        Opacity="0.97">
+                    <Grid Margin="22">
+                        <Rectangle RadiusX="14" RadiusY="14"
+                                   Fill="Transparent"
+                                   Stroke="{DynamicResource App.Accent}"
+                                   StrokeThickness="2"
+                                   StrokeDashArray="6 4" />
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Path Width="46" Height="46"
+                                  Stretch="Uniform"
+                                  HorizontalAlignment="Center"
+                                  Stroke="{DynamicResource App.Accent}"
+                                  StrokeThickness="2"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
+                                  StrokeLineJoin="Round"
+                                  Data="M 14,2 L 14,20 M 7,13 L 14,20 L 21,13 M 2,25 L 2,30 L 26,30 L 26,25" />
+                            <TextBlock x:Name="DropOverlayTitle"
+                                       Margin="0,16,0,0"
+                                       FontSize="17"
+                                       FontWeight="SemiBold"
+                                       HorizontalAlignment="Center"
+                                       Foreground="{DynamicResource App.Text}"
+                                       Text="여기에 놓아 파일 열기" />
+                            <TextBlock x:Name="DropOverlaySubtitle"
+                                       Margin="0,6,0,0"
+                                       HorizontalAlignment="Center"
+                                       TextAlignment="Center"
+                                       TextWrapping="Wrap"
+                                       MaxWidth="420"
+                                       Foreground="{DynamicResource App.TextMuted}"
+                                       Text="여러 파일을 놓으면 각각 새 탭으로 열립니다." />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
 
         </DockPanel>
     </DockPanel>

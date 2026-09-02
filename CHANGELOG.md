@@ -5,6 +5,20 @@
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-08-28
+
+### 고쳐짐
+- 본문 편집 영역 위에 파일을 끌어다 놓으면 열리지 않던 문제.
+  편집기(`TextBox`)가 자체 드롭 처리로 이벤트를 먼저 가로채고 있어서,
+  창 테두리나 메뉴 위에 놓았을 때만 동작했다.
+  이제 터널링(`PreviewDragOver` / `PreviewDrop`) 이벤트로 처리해 창 어디에 놓아도 열린다.
+
+### 추가됨
+- **폴더 끌어다 놓기** — 폴더를 놓으면 그 위치에서 시작하는 열기 창이 뜬다.
+  파일과 폴더를 함께 놓으면 파일은 바로 열리고 폴더는 열기 창의 시작 위치가 된다.
+- **드롭 안내 표시** — 끌어다 놓는 동안 무엇이 열릴지 알려 주는 안내가 본문 위에 표시된다.
+- 한 번에 20개를 넘는 파일을 놓으면 탭이 그만큼 만들어진다는 확인을 먼저 받는다.
+
 ## [1.0.0] - 2026-08-28
 
 첫 공개 버전.
@@ -37,5 +51,6 @@
 - **설정 유지** — 테마, 글꼴, 자동 줄 바꿈, 확대 비율, 창 위치·크기, 최근 파일
 - **GitHub Actions 빌드 파이프라인** — Windows 빌드 + `v*` 태그 릴리스 자동 첨부
 
-[Unreleased]: https://github.com/earlln/memoJJang/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/earlln/memoJJang/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/earlln/memoJJang/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/earlln/memoJJang/releases/tag/v1.0.0

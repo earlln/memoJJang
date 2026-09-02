@@ -25,12 +25,17 @@ public partial class MainWindow : Window
 
     private static readonly int[] ZoomPresets = { 50, 75, 100, 125, 150, 200, 300, 500 };
 
+    /// <summary>한 번에 끌어다 놓았을 때 확인 없이 바로 여는 파일 수의 상한.</summary>
+    private const int MaxDropFileCount = 20;
+
     private readonly List<DocumentTab> _documents = new();
     private readonly DispatcherTimer _statusTimer;
     private readonly string[] _startupArgs;
 
     private int _untitledCounter;
     private bool _suppressMenuEvents;
+    private DispatcherTimer? _dropOverlayTimer;
+    private IDataObject? _lastDragData;
 
     private static AppSettings Settings => App.Settings;
 
@@ -1015,7 +1020,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ShowOpenDialog(EncodingOption? encoding)
+    private void ShowOpenDialog(EncodingOption? encoding, string? initialDirectory = null)
     {
         var dialog = new OpenFileDialog
         {
@@ -1023,6 +1028,11 @@ public partial class MainWindow : Window
             Multiselect = true,
             Title = encoding is null ? "열기" : $"열기 ({encoding.DisplayName})"
         };
+
+        if (!string.IsNullOrEmpty(initialDirectory) && Directory.Exists(initialDirectory))
+        {
+            dialog.InitialDirectory = initialDirectory;
+        }
 
         if (dialog.ShowDialog(this) != true)
         {
@@ -1448,26 +1458,177 @@ public partial class MainWindow : Window
     //  드래그 앤 드롭
     // ==================================================================
 
-    private void Window_DragOver(object sender, DragEventArgs e)
+    /// <summary>
+    /// 파일 끌어다 놓기는 터널링(Preview) 이벤트로 처리한다.
+    /// 편집기(TextBox)가 자체 드롭 처리로 이벤트를 먼저 가로채기 때문에,
+    /// 버블링 이벤트로는 본문 위에 놓았을 때 파일이 열리지 않는다.
+    /// </summary>
+    private void Window_PreviewDragOver(object sender, DragEventArgs e)
     {
-        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
+        if (!e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            // 일반 텍스트 끌어다 놓기는 편집기가 그대로 처리하도록 둔다.
+            HideDropOverlay();
+            return;
+        }
+
+        e.Effects = DragDropEffects.Copy;
         e.Handled = true;
+
+        // DragOver 는 초당 수십 번 발생하므로 경로 검사는 데이터가 바뀔 때만 한다.
+        if (!ReferenceEquals(_lastDragData, e.Data))
+        {
+            _lastDragData = e.Data;
+            UpdateDropOverlayText(e.Data.GetData(DataFormats.FileDrop) as string[]);
+        }
+
+        ShowDropOverlay();
     }
 
-    private void Window_Drop(object sender, DragEventArgs e)
+    private void Window_PreviewDrop(object sender, DragEventArgs e)
     {
-        if (e.Data.GetData(DataFormats.FileDrop) is not string[] files)
+        HideDropOverlay();
+
+        if (e.Data.GetData(DataFormats.FileDrop) is not string[] paths)
         {
             return;
         }
 
-        foreach (var file in files.Where(File.Exists))
+        e.Handled = true;
+        OpenDroppedPaths(paths);
+    }
+
+    /// <summary>
+    /// 끌어다 놓은 항목을 연다.
+    /// 파일은 각각 새 탭으로 열고, 폴더는 그 위치에서 열기 창을 띄운다.
+    /// </summary>
+    private void OpenDroppedPaths(IReadOnlyList<string> paths)
+    {
+        var files = new List<string>();
+        var folders = new List<string>();
+
+        foreach (var path in paths)
+        {
+            try
+            {
+                if (Directory.Exists(path))
+                {
+                    folders.Add(path);
+                }
+                else if (File.Exists(path))
+                {
+                    files.Add(path);
+                }
+            }
+            catch
+            {
+                // 접근할 수 없는 경로는 건너뛴다.
+            }
+        }
+
+        if (files.Count > MaxDropFileCount)
+        {
+            var answer = MessageBox.Show(
+                this,
+                $"{files.Count}개의 파일을 한 번에 열려고 합니다.\n탭이 그만큼 만들어집니다. 계속할까요?",
+                AppInfo.TitleSuffix,
+                MessageBoxButton.OKCancel,
+                MessageBoxImage.Question);
+
+            if (answer != MessageBoxResult.OK)
+            {
+                files.Clear();
+            }
+        }
+
+        foreach (var file in files)
         {
             OpenFile(file, null);
         }
 
+        // 폴더를 놓으면 그 폴더에서 시작하는 열기 창을 보여 준다.
+        if (folders.Count > 0)
+        {
+            Activate();
+            ShowOpenDialog(null, folders[0]);
+            return;
+        }
+
         Activate();
         FocusEditor();
+    }
+
+    private void ShowDropOverlay()
+    {
+        DropOverlay.Visibility = Visibility.Visible;
+
+        // DragLeave 는 자식 컨트롤을 지날 때마다 발생해 신뢰하기 어렵다.
+        // DragOver 가 멈추면(= 창 밖으로 나가면) 타이머가 만료되도록 해서 감춘다.
+        _dropOverlayTimer ??= CreateDropOverlayTimer();
+        _dropOverlayTimer.Stop();
+        _dropOverlayTimer.Start();
+    }
+
+    private void HideDropOverlay()
+    {
+        _dropOverlayTimer?.Stop();
+        _lastDragData = null;
+
+        if (DropOverlay.Visibility != Visibility.Collapsed)
+        {
+            DropOverlay.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private DispatcherTimer CreateDropOverlayTimer()
+    {
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(280) };
+        timer.Tick += (_, _) => HideDropOverlay();
+        return timer;
+    }
+
+    private void UpdateDropOverlayText(string[]? paths)
+    {
+        var hasFile = false;
+        var hasFolder = false;
+
+        if (paths is not null)
+        {
+            foreach (var path in paths)
+            {
+                try
+                {
+                    if (Directory.Exists(path))
+                    {
+                        hasFolder = true;
+                    }
+                    else if (File.Exists(path))
+                    {
+                        hasFile = true;
+                    }
+                }
+                catch
+                {
+                    // 접근할 수 없는 경로는 무시한다.
+                }
+            }
+        }
+
+        if (hasFolder && !hasFile)
+        {
+            DropOverlayTitle.Text = "여기에 놓으면 열기 창이 열립니다";
+            DropOverlaySubtitle.Text = "놓은 폴더 위치에서 파일 선택 창이 시작됩니다.";
+        }
+        else if (hasFolder)
+        {
+            DropOverlayTitle.Text = "여기에 놓아 열기";
+            DropOverlaySubtitle.Text = "파일은 바로 열리고, 폴더는 열기 창의 시작 위치가 됩니다.";
+        }
+        else
+        {
+            DropOverlayTitle.Text = "여기에 놓아 파일 열기";
+            DropOverlaySubtitle.Text = "여러 파일을 놓으면 각각 새 탭으로 열립니다.";
+        }
     }
 
     // ==================================================================

@@ -9,7 +9,7 @@
     ============================================================
   -->
   <PropertyGroup>
-    <VersionPrefix>1.0.0</VersionPrefix>
+    <VersionPrefix>1.0.1</VersionPrefix>
     <!-- 사용자에게 보이는 짧은 버전 (창 제목에 사용) -->
     <DisplayVersion>1.0</DisplayVersion>
   </PropertyGroup>

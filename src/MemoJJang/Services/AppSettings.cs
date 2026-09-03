@@ -40,6 +40,9 @@ public sealed class AppSettings
     /// <summary>종료 시 열려 있던 탭을 다음 실행에서 복원할지 여부.</summary>
     public bool RestoreSession { get; set; } = true;
 
+    /// <summary>Markdown 파일을 열 때 미리 보기를 자동으로 함께 열지 여부.</summary>
+    public bool MarkdownPreviewAutoOpen { get; set; } = true;
+
     public double WindowLeft { get; set; } = double.NaN;
 
     public double WindowTop { get; set; } = double.NaN;

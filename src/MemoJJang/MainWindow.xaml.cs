@@ -8,6 +8,7 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using MemoJJang.Controls;
 using MemoJJang.Dialogs;
 using MemoJJang.Models;
 using MemoJJang.Services;
@@ -36,6 +37,7 @@ public partial class MainWindow : Window
     private bool _suppressMenuEvents;
     private DispatcherTimer? _dropOverlayTimer;
     private IDataObject? _lastDragData;
+    private DispatcherTimer? _previewTimer;
 
     private static AppSettings Settings => App.Settings;
 
@@ -202,11 +204,20 @@ public partial class MainWindow : Window
     {
         var editor = CreateEditor();
 
+        // 탭 내용은 [편집기 | 분할선 | Markdown 미리 보기] 3열 격자.
+        // 미리 보기를 켜기 전까지 2·3열은 너비 0 이라 화면에는 편집기만 보인다.
+        var root = new Grid();
+        root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        root.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(0) });
+        Grid.SetColumn(editor, 0);
+        root.Children.Add(editor);
+
         var item = new TabItem
         {
             Style = (Style)FindResource("App.TabItem"),
             HeaderTemplate = (DataTemplate)FindResource("App.TabHeaderTemplate"),
-            Content = editor
+            Content = root
         };
 
         var document = new DocumentTab(
@@ -222,7 +233,9 @@ public partial class MainWindow : Window
 
         item.Header = document;
         item.Tag = document;
+        item.ContextMenu = CreateTabContextMenu(document);
 
+        document.Root = root;
         editor.Tag = document;
 
         if (!string.IsNullOrEmpty(text))
@@ -268,6 +281,18 @@ public partial class MainWindow : Window
 
         editor.TextChanged += Editor_TextChanged;
         editor.SelectionChanged += Editor_SelectionChanged;
+
+        // 열 단위(사각형) 편집용 입력 처리
+        editor.PreviewMouseLeftButtonDown += Editor_PreviewMouseLeftButtonDown;
+        editor.PreviewMouseMove += Editor_PreviewMouseMove;
+        editor.PreviewMouseLeftButtonUp += Editor_PreviewMouseLeftButtonUp;
+        editor.PreviewKeyDown += Editor_PreviewKeyDown;
+        editor.PreviewTextInput += Editor_PreviewTextInput;
+        editor.AddHandler(
+            TextCompositionManager.PreviewTextInputUpdateEvent,
+            new TextCompositionEventHandler(Editor_PreviewTextInputUpdate));
+        editor.SizeChanged += Editor_SizeChanged;
+        editor.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler(Editor_ScrollChanged));
 
         ApplyEditorAppearance(editor);
         return editor;
@@ -325,15 +350,24 @@ public partial class MainWindow : Window
             return;
         }
 
+        // 줄 위치 캐시는 텍스트가 바뀌면 무효가 된다.
+        document.CachedLineIndex = null;
+
         if (!document.IsLoading)
         {
             document.IsModified = true;
+        }
+
+        if (document.Column is not null)
+        {
+            UpdateColumnVisual(document);
         }
 
         if (ReferenceEquals(document, Current))
         {
             UpdateTitle();
             ScheduleStatusUpdate();
+            SchedulePreviewUpdate();
         }
     }
 
@@ -356,6 +390,7 @@ public partial class MainWindow : Window
         UpdateStatusBar();
         RefreshEncodingChecks();
         RefreshLineEndingChecks();
+        RefreshMarkdownMenu();
         FocusEditor();
     }
 
@@ -471,10 +506,16 @@ public partial class MainWindow : Window
                 target.IsModified = false;
             }
 
+            if (Settings.MarkdownPreviewAutoOpen && MarkdownRenderer.IsMarkdownFile(full))
+            {
+                SetPreviewVisible(target, true);
+            }
+
             Settings.PushRecentFile(full);
             RefreshRecentFilesMenu();
             RefreshEncodingChecks();
             RefreshLineEndingChecks();
+            RefreshMarkdownMenu();
             UpdateTitle();
             UpdateStatusBar();
             return true;
@@ -776,6 +817,12 @@ public partial class MainWindow : Window
             ? $"{characters:N0}자 · {words:N0}단어 · 선택 {selection:N0}자"
             : $"{characters:N0}자 · {words:N0}단어";
 
+        ColumnModeText.Text = document.Column is null
+            ? string.Empty
+            : document.Column.Width > 0
+                ? $"열 선택 {document.Column.LineCount}줄 × {document.Column.Width}자"
+                : $"열 선택 {document.Column.LineCount}줄";
+
         EncodingHintText.Text = string.IsNullOrEmpty(document.DetectionReason)
             ? string.Empty
             : $"({document.DetectionReason})";
@@ -971,6 +1018,8 @@ public partial class MainWindow : Window
         WordWrapMenuItem.IsChecked = Settings.WordWrap;
         StatusBarMenuItem.IsChecked = Settings.ShowStatusBar;
         RestoreSessionMenuItem.IsChecked = Settings.RestoreSession;
+        MarkdownAutoPreviewMenuItem.IsChecked = Settings.MarkdownPreviewAutoOpen;
+        MarkdownPreviewMenuItem.IsChecked = Current?.IsPreviewVisible == true;
         ThemeLightMenuItem.IsChecked = Settings.Theme == AppTheme.Light;
         ThemeDarkMenuItem.IsChecked = Settings.Theme == AppTheme.Dark;
         ThemeSystemMenuItem.IsChecked = Settings.Theme == AppTheme.System;
@@ -1390,6 +1439,12 @@ public partial class MainWindow : Window
     {
         Settings.ZoomPercent = Math.Clamp(percent, 20, 500);
         ApplyEditorAppearanceToAll();
+
+        if (Current is { IsPreviewVisible: true } document)
+        {
+            RenderPreview(document);
+        }
+
         UpdateStatusBar();
         SettingsService.Save(Settings);
     }
@@ -1640,6 +1695,13 @@ public partial class MainWindow : Window
         var ctrl = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
         var shift = (Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
 
+        if (e.Key == Key.Escape && Current?.Column is not null)
+        {
+            ClearColumnSelection(Current);
+            e.Handled = true;
+            return;
+        }
+
         if (e.Key == Key.Escape && FindBar.Visibility == Visibility.Visible)
         {
             CloseFindBar();
@@ -1696,6 +1758,9 @@ public partial class MainWindow : Window
                 break;
             case Key.W:
                 CloseTab_Click(sender, e);
+                break;
+            case Key.M when shift:
+                ToggleMarkdownPreview();
                 break;
             case Key.F:
                 Find_Click(sender, e);

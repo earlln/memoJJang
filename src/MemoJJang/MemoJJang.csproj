@@ -26,6 +26,8 @@
 
   <ItemGroup>
     <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
+    <!-- Markdown 미리 보기 파싱용. 파싱만 사용하고 렌더링은 자체 FlowDocument 변환기가 담당한다. -->
+    <PackageReference Include="Markdig" Version="0.37.0" />
   </ItemGroup>
 
 </Project>

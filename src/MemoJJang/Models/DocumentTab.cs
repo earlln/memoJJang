@@ -3,6 +3,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
+using MemoJJang.Controls;
 
 namespace MemoJJang.Models;
 
@@ -32,6 +33,30 @@ public sealed class DocumentTab : INotifyPropertyChanged
     public TabItem Item { get; }
 
     public TextBox Editor { get; }
+
+    /// <summary>탭의 내용 전체(편집기 + 분할선 + 미리 보기)를 담는 격자.</summary>
+    public Grid? Root { get; set; }
+
+    /// <summary>Markdown 미리 보기 패널. 미리 보기를 처음 켤 때 만들어진다.</summary>
+    public FlowDocumentScrollViewer? Preview { get; set; }
+
+    /// <summary>편집기와 미리 보기 사이의 분할선.</summary>
+    public GridSplitter? Splitter { get; set; }
+
+    /// <summary>이 문서에서 미리 보기가 열려 있는지.</summary>
+    public bool IsPreviewVisible { get; set; }
+
+    /// <summary>사각형(열 단위) 선택 상태. null 이면 열 편집 모드가 꺼진 것.</summary>
+    public ColumnSelection? Column { get; set; }
+
+    /// <summary>사각형 선택을 그리는 장식자.</summary>
+    public ColumnSelectionAdorner? ColumnAdorner { get; set; }
+
+    /// <summary>열 선택을 마우스로 끌고 있는 중인지.</summary>
+    public bool IsColumnDragging { get; set; }
+
+    /// <summary>줄 시작 위치 캐시. 텍스트가 바뀌면 무효가 된다.</summary>
+    public LineIndex? CachedLineIndex { get; set; }
 
     /// <summary>파일을 읽어 넣는 동안 TextChanged 를 무시하기 위한 표시.</summary>
     public bool IsLoading { get; set; }

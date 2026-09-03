@@ -44,6 +44,12 @@ public sealed class ColumnSelectionAdorner : Adorner
         set => SetValue(CaretBrushProperty, value);
     }
 
+    /// <summary>선택 영역을 덮는 정도. 아래의 글자가 비쳐 보여야 한다.</summary>
+    private const double FillOpacity = 0.38;
+
+    private Pen? _outlinePen;
+    private Brush? _outlineSource;
+
     /// <summary>현재 표시할 선택 영역. null 이면 아무것도 그리지 않는다.</summary>
     public ColumnSelection? Selection { get; private set; }
 
@@ -121,11 +127,40 @@ public sealed class ColumnSelectionAdorner : Adorner
             }
 
             var visible = Rect.Intersect(rect, viewport);
-            if (!visible.IsEmpty)
+            if (visible.IsEmpty)
             {
-                drawingContext.DrawRectangle(fill, null, visible);
+                continue;
+            }
+
+            // 선택 브러시는 불투명하다. 그대로 칠하면 아래의 글자가 가려지므로
+            // 반투명하게 덮고 테두리만 또렷하게 그린다.
+            drawingContext.PushOpacity(FillOpacity);
+            drawingContext.DrawRectangle(fill, null, visible);
+            drawingContext.Pop();
+
+            if (caret is not null)
+            {
+                drawingContext.DrawRectangle(null, GetOutlinePen(caret), visible);
             }
         }
+    }
+
+    private Pen GetOutlinePen(Brush source)
+    {
+        if (_outlinePen is not null && ReferenceEquals(_outlineSource, source))
+        {
+            return _outlinePen;
+        }
+
+        var brush = source.Clone();
+        brush.Opacity = 0.55;
+        brush.Freeze();
+
+        _outlinePen = new Pen(brush, 1);
+        _outlinePen.Freeze();
+        _outlineSource = source;
+
+        return _outlinePen;
     }
 
     private Rect SafeRect(int characterIndex)

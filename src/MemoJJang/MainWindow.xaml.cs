@@ -286,6 +286,7 @@ public partial class MainWindow : Window
         editor.PreviewMouseLeftButtonDown += Editor_PreviewMouseLeftButtonDown;
         editor.PreviewMouseMove += Editor_PreviewMouseMove;
         editor.PreviewMouseLeftButtonUp += Editor_PreviewMouseLeftButtonUp;
+        editor.LostMouseCapture += Editor_LostMouseCapture;
         editor.PreviewKeyDown += Editor_PreviewKeyDown;
         editor.PreviewTextInput += Editor_PreviewTextInput;
         editor.AddHandler(
@@ -317,6 +318,12 @@ public partial class MainWindow : Window
         editor.HorizontalScrollBarVisibility = Settings.WordWrap
             ? ScrollBarVisibility.Disabled
             : ScrollBarVisibility.Auto;
+
+        // 글꼴이나 크기가 바뀌면 열 계산에 쓰는 글자 폭을 다시 재야 한다.
+        if (editor.Tag is DocumentTab document)
+        {
+            document.ColumnCharWidth = null;
+        }
     }
 
     private void ApplyEditorAppearanceToAll()
@@ -391,6 +398,7 @@ public partial class MainWindow : Window
         RefreshEncodingChecks();
         RefreshLineEndingChecks();
         RefreshMarkdownMenu();
+        RefreshColumnAdorners();
         FocusEditor();
     }
 

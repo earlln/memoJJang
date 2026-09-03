@@ -58,6 +58,9 @@ public sealed class DocumentTab : INotifyPropertyChanged
     /// <summary>줄 시작 위치 캐시. 텍스트가 바뀌면 무효가 된다.</summary>
     public LineIndex? CachedLineIndex { get; set; }
 
+    /// <summary>열 편집에서 쓰는 글자 하나의 평균 폭. 글꼴이나 확대 비율이 바뀌면 무효가 된다.</summary>
+    public double? ColumnCharWidth { get; set; }
+
     /// <summary>파일을 읽어 넣는 동안 TextChanged 를 무시하기 위한 표시.</summary>
     public bool IsLoading { get; set; }
 

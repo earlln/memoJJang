@@ -5,6 +5,27 @@
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-09-03
+
+열 단위 편집이 제대로 동작하지 않던 문제들을 고쳤다.
+
+### 고쳐짐
+- **글자를 치는 순간 열 선택이 풀리던 문제.**
+  `PreviewKeyDown` 에서 "처리하지 않은 모든 키"에 대해 열 선택을 해제하고 있었다.
+  문자 키도 여기에 걸려서, 입력이 `PreviewTextInput` 에 닿기 전에 이미 선택이 사라졌다.
+  이제 방향키·Home/End·PageUp/PageDown·Enter·`Ctrl+A/Z/Y` 처럼
+  명시한 키에서만 해제하고, 문자 키는 건드리지 않는다.
+- **선택 영역이 글자를 덮어 버리던 문제.**
+  선택 브러시가 불투명이라 사각형을 칠하면 아래 글자가 보이지 않았다.
+  이제 반투명(38%)으로 덮고 테두리를 따로 그린다.
+- **짧은 줄을 지나며 드래그하면 사각형이 좁아지던 문제.**
+  `GetCharacterIndexFromPoint` 는 줄 끝을 넘어선 위치를 줄 끝으로 잘라 버린다.
+  이제 줄 끝보다 오른쪽을 가리키면 글자 폭으로 나눠 가상의 열을 더 센다.
+- 탭을 옮겼을 때 이전 탭의 선택 표시가 남아 보일 수 있던 문제.
+  장식 계층은 창 단위라 현재 탭이 아닌 문서의 표시를 지우도록 했다.
+- 마우스 캡처를 잃어도 드래그 상태가 풀리지 않던 문제.
+- `Alt` 조합에서 실제 키가 `SystemKey` 에 담기는 것을 일관되게 처리하도록 정리.
+
 ## [1.2.0] - 2026-09-03
 
 ### 추가됨
@@ -91,7 +112,8 @@
 - **설정 유지** — 테마, 글꼴, 자동 줄 바꿈, 확대 비율, 창 위치·크기, 최근 파일
 - **GitHub Actions 빌드 파이프라인** — Windows 빌드 + `v*` 태그 릴리스 자동 첨부
 
-[Unreleased]: https://github.com/earlln/memoJJang/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/earlln/memoJJang/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/earlln/memoJJang/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/earlln/memoJJang/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/earlln/memoJJang/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/earlln/memoJJang/releases/tag/v1.0.0

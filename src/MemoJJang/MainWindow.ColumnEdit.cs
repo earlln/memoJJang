@@ -1,8 +1,10 @@
-﻿using System.Text;
+﻿using System.Globalization;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Media;
 using MemoJJang.Controls;
 using MemoJJang.Models;
 using MemoJJang.Services;
@@ -163,6 +165,14 @@ public partial class MainWindow
         }
     }
 
+    private void Editor_LostMouseCapture(object sender, MouseEventArgs e)
+    {
+        if (sender is TextBox { Tag: DocumentTab document } editor && document.IsColumnDragging)
+        {
+            EndColumnDrag(document, editor);
+        }
+    }
+
     private void EndColumnDrag(DocumentTab document, TextBox editor)
     {
         document.IsColumnDragging = false;
@@ -185,7 +195,74 @@ public partial class MainWindow
             index = editor.CaretIndex;
         }
 
-        return GetLines(document).FromIndex(index);
+        var lines = GetLines(document);
+        var (line, column) = lines.FromIndex(index);
+
+        // GetCharacterIndexFromPoint 는 줄 끝을 넘어선 위치를 줄 끝으로 잘라 버린다.
+        // 그대로 두면 짧은 줄을 지나며 드래그할 때 사각형이 그 줄 길이만큼 좁아진다.
+        // 줄 끝보다 오른쪽을 가리키고 있으면 글자 폭으로 나눠 가상의 열을 더 센다.
+        if (column >= lines.LengthOf(line))
+        {
+            var characterWidth = GetCharacterWidth(document);
+
+            if (characterWidth > 0)
+            {
+                var rect = Rect.Empty;
+
+                try
+                {
+                    rect = editor.GetRectFromCharacterIndex(lines.ToIndex(line, column));
+                }
+                catch
+                {
+                    // 화면 밖이면 보정하지 않는다.
+                }
+
+                if (!rect.IsEmpty && point.X > rect.X)
+                {
+                    column += (int)Math.Round((point.X - rect.X) / characterWidth);
+                }
+            }
+        }
+
+        return (line, Math.Max(0, column));
+    }
+
+    /// <summary>
+    /// 글자 하나의 평균 폭. 열 편집은 사실상 고정폭 글꼴을 전제로 하므로
+    /// 열 번호를 화면 좌표로 환산하는 데 이 값을 쓴다.
+    /// </summary>
+    private static double GetCharacterWidth(DocumentTab document)
+    {
+        if (document.ColumnCharWidth is { } cached)
+        {
+            return cached;
+        }
+
+        var editor = document.Editor;
+
+        try
+        {
+            var typeface = new Typeface(editor.FontFamily, editor.FontStyle, editor.FontWeight, editor.FontStretch);
+
+            var sample = new FormattedText(
+                "0000000000",
+                CultureInfo.CurrentCulture,
+                FlowDirection.LeftToRight,
+                typeface,
+                editor.FontSize,
+                Brushes.Black,
+                VisualTreeHelper.GetDpi(editor).PixelsPerDip);
+
+            var width = sample.WidthIncludingTrailingWhitespace / 10.0;
+            document.ColumnCharWidth = width;
+            return width;
+        }
+        catch
+        {
+            document.ColumnCharWidth = 0;
+            return 0;
+        }
     }
 
     // ==================================================================
@@ -203,8 +280,11 @@ public partial class MainWindow
         var ctrl = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
         var alt = (Keyboard.Modifiers & ModifierKeys.Alt) == ModifierKeys.Alt;
 
+        // Alt 가 눌린 조합에서는 실제 키가 SystemKey 에 담긴다.
+        var key = e.Key == Key.System ? e.SystemKey : e.Key;
+
         // Alt+Shift+C : 캐럿 위치에서 열 선택 시작
-        if (alt && shift && e.SystemKey == Key.C)
+        if (alt && shift && key == Key.C)
         {
             StartColumnSelection_Click(sender, e);
             e.Handled = true;
@@ -216,7 +296,7 @@ public partial class MainWindow
             return;
         }
 
-        switch (e.Key)
+        switch (key)
         {
             case Key.Left when shift:
                 MoveColumnCaret(document, 0, -1);
@@ -267,20 +347,28 @@ public partial class MainWindow
                 PasteColumn(document);
                 e.Handled = true;
                 return;
+
+            // 아래 키들만 열 선택을 끝내고 평소 동작으로 넘긴다.
+            case Key.A when ctrl:
+            case Key.Z when ctrl:
+            case Key.Y when ctrl:
+            case Key.Left:
+            case Key.Right:
+            case Key.Up:
+            case Key.Down:
+            case Key.Home:
+            case Key.End:
+            case Key.PageUp:
+            case Key.PageDown:
+            case Key.Enter:
+            case Key.Escape:
+                ClearColumnSelection(document);
+                return;
         }
 
-        // 수식 키 자체를 누른 것만으로는 선택이 풀리면 안 된다.
-        if (e.Key is Key.LeftShift or Key.RightShift
-            or Key.LeftCtrl or Key.RightCtrl
-            or Key.LeftAlt or Key.RightAlt
-            or Key.LWin or Key.RWin
-            or Key.System or Key.CapsLock or Key.ImeProcessed or Key.None)
-        {
-            return;
-        }
-
-        // 그 밖의 이동/편집 키는 열 선택을 끝내고 평소대로 동작시킨다.
-        ClearColumnSelection(document);
+        // 나머지(문자 키 등)는 여기서 건드리지 않는다.
+        // 문자 입력은 Editor_PreviewTextInput 이 사각형 단위로 처리한다.
+        // 예전에는 여기서 선택을 지워버려서 글자를 치는 순간 열 편집이 풀렸다.
     }
 
     /// <summary>
@@ -582,6 +670,25 @@ public partial class MainWindow
         if (sender is TextBox { Tag: DocumentTab document })
         {
             document.ColumnAdorner?.Update(document.Column, GetLines(document));
+        }
+    }
+
+    /// <summary>
+    /// 어도너는 창 전체의 장식 계층에 붙는다. 탭을 옮기면 이전 탭의 선택 표시가
+    /// 남아 보일 수 있으므로, 현재 탭이 아닌 문서의 표시는 지운다.
+    /// </summary>
+    private void RefreshColumnAdorners()
+    {
+        foreach (var document in _documents)
+        {
+            if (ReferenceEquals(document, Current))
+            {
+                UpdateColumnVisual(document);
+            }
+            else
+            {
+                document.ColumnAdorner?.Update(null, null);
+            }
         }
     }
 
